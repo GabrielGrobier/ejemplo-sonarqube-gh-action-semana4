@@ -1,4 +1,4 @@
-# Biblioteca Demo: GitHub Actions + SonarQube en EC2
+# Biblioteca Demo: GitHub Actions + SonarQube en EC2.
 
 Este proyecto reproduce el mismo concepto trabajado con Jenkins, pero usando **GitHub Actions** como motor de CI.
 
