@@ -2,6 +2,7 @@ name: Build y análisis SonarQube
 
 on:
   workflow_dispatch:
+
   push:
     branches:
       - main
@@ -10,16 +11,21 @@ permissions:
   contents: read
 
 jobs:
+
   build-and-sonar:
+
     name: Maven + SonarQube
     runs-on: ubuntu-latest
 
     steps:
+
+      # 1. Descargar el código del repositorio
       - name: Descargar código
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
+      # 2. Configurar Java
       - name: Configurar Java 21
         uses: actions/setup-java@v5
         with:
@@ -27,12 +33,30 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Compilar, probar y analizar con SonarQube
+      # 3. Mostrar la URL configurada y comprobar que
+      # GitHub Actions puede llegar al SonarQube de AWS
+      - name: Verificar conexión con SonarQube
+        env:
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        run: |
+          echo "Servidor SonarQube: $SONAR_HOST_URL"
+          curl -f --connect-timeout 10 \
+            "$SONAR_HOST_URL/api/system/status"
+
+      # 4. Compilar y ejecutar pruebas
+      - name: Compilar y probar aplicación
+        run: |
+          mvn -B clean verify
+
+      # 5. Ejecutar análisis estático en SonarQube
+      - name: Analizar código con SonarQube
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
-        run: >-
-          mvn -B clean verify
-          org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar
-          -Dsonar.projectKey=biblioteca-demo-github-actions
-          -Dsonar.projectName="Biblioteca Demo GitHub Actions"
+        run: |
+          mvn -B \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
+            -Dsonar.host.url="$SONAR_HOST_URL" \
+            -Dsonar.token="$SONAR_TOKEN" \
+            -Dsonar.projectKey=biblioteca-demo-github-actions \
+            -Dsonar.projectName="Biblioteca Demo GitHub Actions"
