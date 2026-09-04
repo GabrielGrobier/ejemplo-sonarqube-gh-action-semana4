@@ -1,0 +1,50 @@
+package cl.duoc.biblioteca;
+
+import java.time.temporal.ChronoUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+@Service
+public class CalculoMultaService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CalculoMultaService.class);
+    private static final String ESTADO_ATRASADO = "ATRASADO";
+    private static final String ESTADO_AL_DIA = "AL_DIA";
+
+    public ResumenPrestamo generarResumen(Prestamo prestamo) {
+        validarPrestamo(prestamo);
+
+        long diasAtraso = Math.max(0, ChronoUnit.DAYS.between(
+                prestamo.getFechaDevolucionEsperada(),
+                prestamo.getFechaDevolucionReal()
+        ));
+
+        String estado = diasAtraso == 0 ? ESTADO_AL_DIA : ESTADO_ATRASADO;
+
+        if (ESTADO_ATRASADO.equals(estado)) {
+            LOGGER.info("Préstamo atrasado detectado para el préstamo {}", prestamo.getId());
+        }
+
+        long total = diasAtraso * prestamo.getValorMultaDiaria();
+
+        return new ResumenPrestamo(
+                prestamo.getId(),
+                prestamo.getEstudiante(),
+                prestamo.getLibro(),
+                diasAtraso,
+                prestamo.getValorMultaDiaria(),
+                total,
+                estado
+        );
+    }
+
+    private void validarPrestamo(Prestamo prestamo) {
+        if (prestamo == null) {
+            throw new IllegalArgumentException("El préstamo no puede ser nulo");
+        }
+        if (prestamo.getEstudiante() == null || prestamo.getLibro() == null) {
+            throw new IllegalArgumentException("El préstamo debe tener estudiante y libro");
+        }
+    }
+}
